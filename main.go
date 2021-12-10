@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/YoonBaek/CryptoProject/explorer"
+	"github.com/YoonBaek/CryptoProject/rest"
 )
 
 func usage() {
@@ -21,8 +24,10 @@ func main() {
 	switch *mode {
 	case "rest":
 		//start rest API
+		rest.Start(*port)
 	case "explorer":
 		// start html explorer
+		explorer.Start(*port)
 	default:
 		usage()
 	}
