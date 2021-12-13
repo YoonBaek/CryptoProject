@@ -43,7 +43,7 @@ func SaveBlock(hash string, data []byte) {
 	utils.HandleErr(err)
 }
 
-func SaveBlockchain(data []byte) {
+func SaveCheckpoint(data []byte) {
 	err := db.Update(func(t *bolt.Tx) error {
 		bucket := t.Bucket([]byte(dataBucket))
 		err := bucket.Put([]byte("checkpoint"), data)
@@ -61,7 +61,7 @@ func LoadBlock(hash string) (blockBytes []byte) {
 	return
 }
 
-func LoadCheckPoint() (data []byte) {
+func LoadCheckpoint() (data []byte) {
 	DB().View(func(t *bolt.Tx) error {
 		bucket := t.Bucket([]byte(dataBucket))
 		data = bucket.Get([]byte(cp))
