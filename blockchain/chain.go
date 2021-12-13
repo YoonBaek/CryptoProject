@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/YoonBaek/CryptoProject/blockchain/db"
@@ -23,7 +22,7 @@ func (b *blockchain) restore(data []byte) {
 }
 
 func (b *blockchain) persist() {
-	db.SaveBlockchain(utils.ToBytes(b))
+	db.SaveCheckpoint(utils.ToBytes(b))
 }
 
 func (b *blockchain) AddBlock(data string) {
@@ -42,7 +41,7 @@ func BlockChain() *blockchain {
 		// once.Do()는 메서드 인자에 들어온 함수를 딱 한 번만 실행하는 기능이다.
 		once.Do(func() {
 			b = &blockchain{"", 0}
-			checkpoint := db.LoadCheckPoint()
+			checkpoint := db.LoadCheckpoint()
 			if checkpoint == nil {
 				b.AddBlock("Genesis Block")
 				return
@@ -51,6 +50,20 @@ func BlockChain() *blockchain {
 			b.restore(checkpoint)
 		})
 	}
-	fmt.Println(b.LatestHash)
 	return b
+}
+
+// 쭉 prevHash를 타고 가면서 이전 블록을 불러와 slice에 담고,
+// 해당 슬라이스를 반환하기
+func (b *blockchain) Blocks() (blocks []*Block) {
+	hashMarker := b.LatestHash
+	for {
+		if hashMarker == "" {
+			break
+		}
+		block, _ := FindBlock(hashMarker)
+		blocks = append(blocks, block)
+		hashMarker = block.PrevHash
+	}
+	return
 }
