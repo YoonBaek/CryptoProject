@@ -1,7 +1,11 @@
 package blockchain
 
 import (
+	"fmt"
 	"sync"
+
+	"github.com/YoonBaek/CryptoProject/blockchain/db"
+	"github.com/YoonBaek/CryptoProject/utils"
 )
 
 type blockchain struct {
@@ -9,13 +13,24 @@ type blockchain struct {
 	Height     int    `json:"height"`
 }
 
-var b *blockchain
-var once sync.Once
+var (
+	b    *blockchain
+	once sync.Once
+)
+
+func (b *blockchain) restore(data []byte) {
+	utils.FromBytes(b, data)
+}
+
+func (b *blockchain) persist() {
+	db.SaveBlockchain(utils.ToBytes(b))
+}
 
 func (b *blockchain) AddBlock(data string) {
 	block := createBlock(data, b.LatestHash, b.Height+1)
 	b.LatestHash = block.Hash
 	b.Height = block.Height
+	b.persist()
 }
 
 func BlockChain() *blockchain {
@@ -27,8 +42,15 @@ func BlockChain() *blockchain {
 		// once.Do()는 메서드 인자에 들어온 함수를 딱 한 번만 실행하는 기능이다.
 		once.Do(func() {
 			b = &blockchain{"", 0}
-			b.AddBlock("Genesis Block")
+			checkpoint := db.LoadCheckPoint()
+			if checkpoint == nil {
+				b.AddBlock("Genesis Block")
+				return
+			}
+			// restore b from bytes
+			b.restore(checkpoint)
 		})
 	}
+	fmt.Println(b.LatestHash)
 	return b
 }
