@@ -9,6 +9,7 @@ const (
 	dbName      = "blockchain.db"
 	dataBucket  = "data"
 	blockBucket = "blocks"
+	cp          = "checkpoint"
 )
 
 var db *bolt.DB
@@ -49,4 +50,26 @@ func SaveBlockchain(data []byte) {
 		return err
 	})
 	utils.HandleErr(err)
+}
+
+func LoadBlock(hash string) (blockBytes []byte) {
+	DB().View(func(t *bolt.Tx) error {
+		bucket := t.Bucket([]byte(blockBucket))
+		blockBytes = bucket.Get([]byte(hash))
+		return nil
+	})
+	return
+}
+
+func LoadCheckPoint() (data []byte) {
+	DB().View(func(t *bolt.Tx) error {
+		bucket := t.Bucket([]byte(dataBucket))
+		data = bucket.Get([]byte(cp))
+		return nil
+	})
+	return
+}
+
+func Close() {
+	DB().Close()
 }
