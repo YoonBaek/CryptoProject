@@ -40,3 +40,6 @@
 
 # Unrelated modules
 person/
+
+# database
+blockchain.db
