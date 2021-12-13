@@ -1,9 +1,8 @@
 package blockchain
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"encoding/gob"
+	"errors"
 	"fmt"
 
 	"github.com/YoonBaek/CryptoProject/blockchain/db"
@@ -17,16 +16,24 @@ type Block struct {
 	Height   int    `json:"heihgt"`
 }
 
-func (b *Block) toBytes() []byte {
-	var blockBuffer bytes.Buffer
-	encoder := gob.NewEncoder(&blockBuffer)
-	err := encoder.Encode(b)
-	utils.HandleErr(err)
-	return blockBuffer.Bytes()
+func (b *Block) persist() {
+	db.SaveBlock(b.Hash, utils.ToBytes(b))
 }
 
-func (b *Block) persist() {
-	db.SaveBlock(b.Hash, b.toBytes())
+func (b *Block) restore(data []byte) {
+	utils.FromBytes(b, data)
+}
+
+var ErrNotFound = errors.New("block not found")
+
+func FindBlock(hash string) (*Block, error) {
+	blockFromDB := db.LoadBlock(hash)
+	if blockFromDB == nil {
+		return nil, ErrNotFound
+	}
+	block := &Block{}
+	block.restore(blockFromDB)
+	return block, nil
 }
 
 func createBlock(data, prevHash string, height int) *Block {
