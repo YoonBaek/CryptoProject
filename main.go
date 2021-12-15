@@ -8,9 +8,6 @@ import (
 
 func main() {
 	defer db.Close()
-	b := blockchain.BlockChain()
-	b.AddBlock("First")
-	b.AddBlock("Second")
-	b.AddBlock("Third")
+	blockchain.BlockChain()
 	cli.Start()
 }

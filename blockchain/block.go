@@ -4,16 +4,23 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/YoonBaek/CryptoProject/blockchain/db"
 	"github.com/YoonBaek/CryptoProject/utils"
 )
 
+// for test
+const difficulty int = 2
+
 type Block struct {
-	Data     string `json:"data"`
-	Hash     string `json:"hash"`
-	PrevHash string `json:"prevHash,omitempty"`
-	Height   int    `json:"heihgt"`
+	Data       string `json:"data"`
+	Hash       string `json:"hash"`
+	PrevHash   string `json:"prevHash,omitempty"`
+	Height     int    `json:"heihgt"`
+	Difficulty int    `json:"difficulty"`
+	Nonce      int    `json:"Nonce"`
+	Timestamp  int    `json:"timestamp"`
 }
 
 func (b *Block) persist() {
@@ -36,16 +43,32 @@ func FindBlock(hash string) (*Block, error) {
 	return block, nil
 }
 
+func (b *Block) mine() {
+	target := strings.Repeat("0", b.Difficulty)
+	for {
+		hash := utils.Hash(b)
+		if strings.HasPrefix(hash, target) {
+			fmt.Printf("Block As String: %s\nHash: %s\nNonce: %d\n\n\n", blockString, hash, b.Nonce)
+			b.Hash = hash
+			break
+		}
+		b.Nonce++
+	}
+}
+
 func createBlock(data, prevHash string, height int) *Block {
 	block := Block{
-		Data:     data,
-		Hash:     "",
-		PrevHash: prevHash,
-		Height:   height,
+		Data:       data,
+		Hash:       "",
+		PrevHash:   prevHash,
+		Height:     height,
+		Difficulty: difficulty,
+		Nonce:      10,
 	}
 	payload := block.Data + block.PrevHash + fmt.Sprint(block.Height)
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(payload)))
 	block.Hash = hash
+	block.mine()
 	block.persist()
 	return &block
 }
