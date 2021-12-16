@@ -91,12 +91,18 @@ func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func status(rw http.ResponseWriter, r *http.Request) {
+	encoder := json.NewEncoder(rw)
+	encoder.Encode(blockchain.BlockChain())
+}
+
 func Start(portNum int) {
 	router := mux.NewRouter()
 	PORT = fmt.Sprintf(":%d", portNum)
 	router.Use(jsonContentTypeMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
+	router.HandleFunc("/status", status).Methods("GET")
 	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", block).Methods("GET")
 	fmt.Printf("Listening on http://localhost%s\n", PORT)
 	log.Fatal(http.ListenAndServe(PORT, router))
