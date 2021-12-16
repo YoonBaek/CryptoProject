@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/YoonBaek/CryptoProject/blockchain"
+	"github.com/YoonBaek/CryptoProject/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -16,6 +17,11 @@ type url string
 
 type errorMessage struct {
 	ErrorMessage string `json:"errorMessage"`
+}
+
+type balanceMessage struct {
+	Address string `json:"address"`
+	Balance int    `json:"balance"`
 }
 
 func (u url) MarshalText() ([]byte, error) {
@@ -48,15 +54,18 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Method:      "GET",
 			Description: "See A Block",
 		},
+		{
+			URL:         url("/balance/{address}"),
+			Method:      "GET",
+			Description: "Get TxOuts for an address",
+		},
 	}
-	rw.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(data)
 }
 
 func blocks(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		rw.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(rw).Encode(blockchain.BlockChain().Blocks())
 	case "POST":
 		blockchain.BlockChain().AddBlock()
@@ -85,7 +94,22 @@ func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 
 func status(rw http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(rw)
-	encoder.Encode(blockchain.BlockChain())
+	utils.HandleErr(encoder.Encode(blockchain.BlockChain()))
+}
+
+// balance 출력하기
+func balance(rw http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	fmt.Println(vars)
+	address := vars["address"]
+	reqTotal := r.URL.Query().Get("total")
+	encoder := json.NewEncoder(rw)
+	if reqTotal == "true" {
+		total := blockchain.BlockChain().BalanceByAddr(address)
+		utils.HandleErr(encoder.Encode(balanceMessage{address, total}))
+		return
+	}
+	utils.HandleErr(encoder.Encode(blockchain.BlockChain().TxOutsByAddr(address)))
 }
 
 func Start(portNum int) {
@@ -94,8 +118,9 @@ func Start(portNum int) {
 	router.Use(jsonContentTypeMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
-	router.HandleFunc("/status", status).Methods("GET")
 	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", block).Methods("GET")
+	router.HandleFunc("/status", status).Methods("GET")
+	router.HandleFunc("/balance/{address}", balance).Methods("GET")
 	fmt.Printf("Listening on http://localhost%s\n", PORT)
 	log.Fatal(http.ListenAndServe(PORT, router))
 }
