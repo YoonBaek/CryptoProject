@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/YoonBaek/CryptoProject/blockchain/db"
 	"github.com/YoonBaek/CryptoProject/utils"
@@ -48,7 +49,8 @@ func (b *Block) mine() {
 	for {
 		hash := utils.Hash(b)
 		if strings.HasPrefix(hash, target) {
-			fmt.Printf("Block As String: %s\nHash: %s\nNonce: %d\n\n\n", blockString, hash, b.Nonce)
+			// fmt.Printf("Target: %s\nHash: %s\nNonce: %d\nDifficulty: %d\n", target, hash, b.Nonce, b.Difficulty)
+			b.Timestamp = int(time.Now().Unix())
 			b.Hash = hash
 			break
 		}
@@ -62,7 +64,7 @@ func createBlock(data, prevHash string, height int) *Block {
 		Hash:       "",
 		PrevHash:   prevHash,
 		Height:     height,
-		Difficulty: difficulty,
+		Difficulty: BlockChain().difficulty(),
 		Nonce:      10,
 	}
 	payload := block.Data + block.PrevHash + fmt.Sprint(block.Height)
