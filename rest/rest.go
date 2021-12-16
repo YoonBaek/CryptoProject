@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/YoonBaek/CryptoProject/blockchain"
-	"github.com/YoonBaek/CryptoProject/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -29,10 +28,6 @@ type urlDescription struct {
 	Method      string `json:"method"`
 	Description string `json:"description"`
 	Payload     string `json:"payload,omitempty"`
-}
-
-type addBlockBody struct {
-	Message string
 }
 
 func documentation(rw http.ResponseWriter, r *http.Request) {
@@ -64,10 +59,7 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(rw).Encode(blockchain.BlockChain().Blocks())
 	case "POST":
-		// {"data": "my block data"}
-		var add addBlockBody
-		utils.HandleErr(json.NewDecoder(r.Body).Decode(&add))
-		blockchain.BlockChain().AddBlock(add.Message)
+		blockchain.BlockChain().AddBlock()
 		rw.WriteHeader(http.StatusCreated)
 	}
 }
