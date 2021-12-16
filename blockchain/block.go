@@ -1,9 +1,7 @@
 package blockchain
 
 import (
-	"crypto/sha256"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -11,17 +9,16 @@ import (
 	"github.com/YoonBaek/CryptoProject/utils"
 )
 
-// for test
-const difficulty int = 2
+var ErrNotFound = errors.New("block not found")
 
 type Block struct {
-	Data       string `json:"data"`
-	Hash       string `json:"hash"`
-	PrevHash   string `json:"prevHash,omitempty"`
-	Height     int    `json:"heihgt"`
-	Difficulty int    `json:"difficulty"`
-	Nonce      int    `json:"Nonce"`
-	Timestamp  int    `json:"timestamp"`
+	Hash         string `json:"hash"`
+	PrevHash     string `json:"prevHash,omitempty"`
+	Height       int    `json:"heihgt"`
+	Difficulty   int    `json:"difficulty"`
+	Nonce        int    `json:"Nonce"`
+	Timestamp    int    `json:"timestamp"`
+	TransActions []*Tx  `json:"transactions"`
 }
 
 func (b *Block) persist() {
@@ -30,18 +27,6 @@ func (b *Block) persist() {
 
 func (b *Block) restore(data []byte) {
 	utils.FromBytes(b, data)
-}
-
-var ErrNotFound = errors.New("block not found")
-
-func FindBlock(hash string) (*Block, error) {
-	blockFromDB := db.LoadBlock(hash)
-	if blockFromDB == nil {
-		return nil, ErrNotFound
-	}
-	block := &Block{}
-	block.restore(blockFromDB)
-	return block, nil
 }
 
 func (b *Block) mine() {
@@ -58,18 +43,25 @@ func (b *Block) mine() {
 	}
 }
 
-func createBlock(data, prevHash string, height int) *Block {
-	block := Block{
-		Data:       data,
-		Hash:       "",
-		PrevHash:   prevHash,
-		Height:     height,
-		Difficulty: BlockChain().difficulty(),
-		Nonce:      10,
+func FindBlock(hash string) (*Block, error) {
+	blockFromDB := db.LoadBlock(hash)
+	if blockFromDB == nil {
+		return nil, ErrNotFound
 	}
-	payload := block.Data + block.PrevHash + fmt.Sprint(block.Height)
-	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(payload)))
-	block.Hash = hash
+	block := &Block{}
+	block.restore(blockFromDB)
+	return block, nil
+}
+
+func createBlock(prevHash string, height int) *Block {
+	block := Block{
+		Hash:         "",
+		PrevHash:     prevHash,
+		Height:       height,
+		Difficulty:   BlockChain().difficulty(),
+		Nonce:        10,
+		TransActions: []*Tx{makeCoinbaseTx("yoonbaek")},
+	}
 	block.mine()
 	block.persist()
 	return &block

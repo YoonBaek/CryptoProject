@@ -38,8 +38,7 @@ func add(rw http.ResponseWriter, r *http.Request) {
 		}
 	case "POST":
 		r.ParseForm()
-		data := r.Form.Get("blockData")
-		blockchain.BlockChain().AddBlock(data)
+		blockchain.BlockChain().AddBlock()
 		http.Redirect(rw, r, "/", http.StatusPermanentRedirect)
 	}
 }

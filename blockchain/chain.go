@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	defaultDifficulty  int = 2
-	difficultyInterval int = 7
-	blockInterval      int = 2
-	bound              int = 3
+	defaultDifficulty  int = 2 // 초기 채굴 난이도
+	difficultyInterval int = 7 // 목표 채굴 검증 주기
+	blockInterval      int = 2 // 블록 간 생성 시간 인터벌 (분)
+	bound              int = 3 // 채굴 갯수 차이 허용 범위 +-3
 )
 
 type blockchain struct {
@@ -44,7 +44,7 @@ func (b *blockchain) recalculateDifficulty() int {
 		return b.CurrentDifficulty + 1
 	}
 	if actualTime > expectedTime+bound {
-		return b.CurrentDifficulty
+		return b.CurrentDifficulty - 1
 	}
 	return b.CurrentDifficulty
 }
@@ -59,8 +59,8 @@ func (b *blockchain) difficulty() int {
 	return b.CurrentDifficulty
 }
 
-func (b *blockchain) AddBlock(data string) {
-	block := createBlock(data, b.LatestHash, b.Height+1)
+func (b *blockchain) AddBlock() {
+	block := createBlock(b.LatestHash, b.Height+1)
 	b.LatestHash = block.Hash
 	b.Height = block.Height
 	b.CurrentDifficulty = block.Difficulty
@@ -78,7 +78,7 @@ func BlockChain() *blockchain {
 			b = &blockchain{Height: 0}
 			checkpoint := db.LoadCheckpoint()
 			if checkpoint == nil {
-				b.AddBlock("Genesis Block")
+				b.AddBlock()
 				return
 			}
 			// restore b from bytes
