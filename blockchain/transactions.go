@@ -1,12 +1,23 @@
 package blockchain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/YoonBaek/CryptoProject/utils"
 )
 
 const minerReward int = 10
+
+// Mempool
+type mempool struct {
+	Txs []*Tx
+}
+
+// blockchain을 생성할 때는 DB에서 한 번 불러와주는 로직이
+// 반드시 필요했지만, Mempool은 그렇지 않기 때문에
+// Singleton 패턴을 적용하지 않고 바로 Export 해준다.
+var Mempool *mempool = &mempool{}
 
 // TransAction
 type Tx struct {
@@ -70,6 +81,7 @@ func (b *blockchain) TxOutsByAddr(addr string) (txOutsByAddr []*TxOut) {
 	return
 }
 
+// 남은 잔고의 총액을 반환
 func (b *blockchain) BalanceByAddr(addr string) (total int) {
 	txOuts := b.TxOutsByAddr(addr)
 
@@ -77,4 +89,57 @@ func (b *blockchain) BalanceByAddr(addr string) (total int) {
 		total += txOut.Amount
 	}
 	return
+}
+
+// Tx의 메모리를 반환하는 함수
+// 1. 남은 balance 보다 많은 amount를 요구하면 error
+// 2. owner가 보유중인 과거 Tx들에서 amount를 떼 오고 total에 저장
+// 3. 거스름 돈은 owner에게 다시 txout
+func makeTx(from, to string, amount int) (*Tx, error) {
+	b := BlockChain()
+	if b.BalanceByAddr(from) < amount {
+		return nil, errors.New("not enough money")
+	}
+	total, txIns, txOuts := 0, []*TxIn{}, []*TxOut{}
+	pastTxOuts := b.TxOutsByAddr(from)
+	for _, txOut := range pastTxOuts {
+		if total > amount {
+			break
+		}
+		txIns = append(txIns, &TxIn{txOut.Owner, txOut.Amount})
+		total += txOut.Amount
+	}
+	change := total - amount
+	// changes to prev owner
+	txOut := &TxOut{from, change}
+	txOuts = append(txOuts, txOut)
+	// totals to new owner
+	txOut = &TxOut{to, amount}
+	txOuts = append(txOuts, txOut)
+
+	tx := &Tx{
+		Id:        "",
+		TimeStamp: int(time.Now().Unix()),
+		TxIns:     txIns,
+		TxOuts:    txOuts,
+	}
+	tx.getId()
+	return tx, nil
+}
+
+func (m *mempool) AddTx(to string, amount int) error {
+	tx, err := makeTx("yoonbaek", to, amount)
+	if err != nil {
+		return err
+	}
+	m.Txs = append(m.Txs, tx)
+	return nil
+}
+
+func (m *mempool) Confirm() []*Tx {
+	coinbase := makeCoinbaseTx("yoonbaek")
+	txs := m.Txs
+	txs = append(txs, coinbase)
+	m.Txs = nil
+	return txs
 }
