@@ -24,6 +24,11 @@ type balanceMessage struct {
 	Balance int    `json:"balance"`
 }
 
+type txPayload struct {
+	To     string
+	Amount int
+}
+
 func (u url) MarshalText() ([]byte, error) {
 	url := fmt.Sprintf("http://localhost%s%s", PORT, u)
 	return []byte(url), nil
@@ -112,6 +117,23 @@ func balance(rw http.ResponseWriter, r *http.Request) {
 	utils.HandleErr(encoder.Encode(blockchain.BlockChain().TxOutsByAddr(address)))
 }
 
+func mempool(rw http.ResponseWriter, r *http.Request) {
+	encoder := json.NewEncoder(rw)
+	utils.HandleErr(encoder.Encode(blockchain.Mempool.Txs))
+}
+
+// transaction POST API 만들기
+func transaction(rw http.ResponseWriter, r *http.Request) {
+	txForm := txPayload{}
+	decoder := json.NewDecoder(r.Body)
+	utils.HandleErr(decoder.Decode(&txForm))
+	err := blockchain.Mempool.AddTx(txForm.To, txForm.Amount)
+	if err != nil {
+		json.NewEncoder(rw).Encode(errorMessage{"not enough funds"})
+	}
+	rw.WriteHeader(http.StatusCreated)
+}
+
 func Start(portNum int) {
 	router := mux.NewRouter()
 	PORT = fmt.Sprintf(":%d", portNum)
@@ -121,6 +143,8 @@ func Start(portNum int) {
 	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", block).Methods("GET")
 	router.HandleFunc("/status", status).Methods("GET")
 	router.HandleFunc("/balance/{address}", balance).Methods("GET")
+	router.HandleFunc("/mempool", mempool).Methods("GET")
+	router.HandleFunc("/transaction", transaction).Methods("POST")
 	fmt.Printf("Listening on http://localhost%s\n", PORT)
 	log.Fatal(http.ListenAndServe(PORT, router))
 }
