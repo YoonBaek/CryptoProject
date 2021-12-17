@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 
 	"github.com/YoonBaek/CryptoProject/explorer"
 	"github.com/YoonBaek/CryptoProject/rest"
@@ -15,12 +14,12 @@ func usage() {
 	fmt.Printf("Pealse use the following commands:\n\n")
 	fmt.Printf("-mode:	Choose between 'rest' and 'explorer'\n	If you want both, 'greedy' is ready for you\n")
 	fmt.Printf("-port:	Sets the port number of the server\n\n")
-	runtime.Goexit()
 }
 
 func Start() {
 	if len(os.Args) == 1 {
 		usage()
+		return
 	}
 	mode := flag.String("mode", "rest", "Choose between 'rest' and 'explorer'\nIf you want both, 'greedy' is ready for you\n")
 	port := flag.Int("port", 4000, "Sets the port number of the server")
@@ -38,5 +37,6 @@ func Start() {
 		explorer.Start(*port + 1)
 	default:
 		usage()
+		return
 	}
 }
