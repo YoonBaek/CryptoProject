@@ -114,7 +114,7 @@ func balance(rw http.ResponseWriter, r *http.Request) {
 		utils.HandleErr(encoder.Encode(balanceMessage{address, total}))
 		return
 	}
-	utils.HandleErr(encoder.Encode(blockchain.BlockChain().TxOutsByAddr(address)))
+	utils.HandleErr(encoder.Encode(blockchain.BlockChain().UtxOutsByAddr(address)))
 }
 
 func mempool(rw http.ResponseWriter, r *http.Request) {
