@@ -37,7 +37,7 @@ func (t *Tx) getId() {
 // TxOut에서 가져오면 되기 때문에 제외해준다.
 // 즉, 어느 TxOut에서 돈을 뽑아올지 보여주는 표지판이라고 보면 된다.
 type TxIn struct {
-	TxID  string `json:"transaction id"` // TxIn에 필요한 TxOut을 제공하는 TxID
+	TxID  string `json:"transaction id"` // uTx 검증에 사용
 	Index int    `json:"index"`
 	Owner string `json:"owner"`
 }
@@ -124,7 +124,7 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 
 	total := 0
 	for _, utxOut := range BlockChain().UtxOutsByAddr(from) {
-		if total > amount {
+		if total >= amount {
 			break
 		}
 		txIns = append(txIns, &TxIn{
