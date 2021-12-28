@@ -91,6 +91,10 @@ func (b *blockchain) UtxOutsByAddr(addr string) (UtxOuts []*UTxOut) {
 					continue
 				}
 				if _, exists := spentCheck[tx.Id]; !exists {
+					criterion := false
+					if criterion = isOnMempool(tx.Id, index); criterion {
+						continue
+					}
 					UtxOuts = append(UtxOuts, &UTxOut{
 						TxId:   tx.Id,
 						Index:  index,
@@ -113,8 +117,7 @@ func (b *blockchain) BalanceByAddr(addr string) (total int) {
 	return
 }
 
-// This function returns pointer of Tx
-//
+// This function returns pointer of calculated Tx
 func makeTx(from, to string, amount int) (*Tx, error) {
 	if BlockChain().BalanceByAddr(from) < amount {
 		return nil, errors.New("not enough money")
@@ -149,6 +152,17 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 	return tx, nil
 }
 
+func isOnMempool(id string, index int) (exists bool) {
+Outer:
+	for _, tx := range Mempool.Txs {
+		for _, txIn := range tx.TxIns {
+			exists = txIn.TxID == id && txIn.Index == index
+			break Outer
+		}
+	}
+	return
+}
+
 func (m *mempool) AddTx(to string, amount int) error {
 	tx, err := makeTx("yoonbaek", to, amount)
 	if err != nil {
@@ -158,6 +172,7 @@ func (m *mempool) AddTx(to string, amount int) error {
 	return nil
 }
 
+// make coinbase Tx and Confirm transaction standby in mempool
 func (m *mempool) Confirm() []*Tx {
 	coinbase := makeCoinbaseTx("yoonbaek")
 	txs := m.Txs

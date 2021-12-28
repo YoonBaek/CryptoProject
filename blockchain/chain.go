@@ -39,7 +39,6 @@ func (b *blockchain) recalculateDifficulty() int {
 	lastRecalculatedBlock := allBlocks[difficultyInterval-1]
 	actualTime := (newestBlock.Timestamp - lastRecalculatedBlock.Timestamp) / 60
 	expectedTime := difficultyInterval * blockInterval
-	// fmt.Println("-------", actualTime, expectedTime-bound)
 	if actualTime < expectedTime-bound {
 		return b.CurrentDifficulty + 1
 	}
