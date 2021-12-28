@@ -58,7 +58,7 @@ func createBlock(prevHash string, height int) *Block {
 		Hash:       "",
 		PrevHash:   prevHash,
 		Height:     height,
-		Difficulty: BlockChain().difficulty(),
+		Difficulty: difficulty(BlockChain()),
 		Nonce:      10,
 	}
 	block.mine()
