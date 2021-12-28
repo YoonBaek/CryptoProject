@@ -153,10 +153,11 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 }
 
 func isOnMempool(id string, index int) (exists bool) {
+Outer:
 	for _, tx := range Mempool.Txs {
 		for _, txIn := range tx.TxIns {
 			exists = txIn.TxID == id && txIn.Index == index
-			return
+			break Outer
 		}
 	}
 	return
