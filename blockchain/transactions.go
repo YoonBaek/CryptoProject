@@ -53,6 +53,24 @@ type UTxOut struct {
 	Amount int
 }
 
+func (m *mempool) AddTx(to string, amount int) error {
+	tx, err := makeTx("yoonbaek", to, amount)
+	if err != nil {
+		return err
+	}
+	m.Txs = append(m.Txs, tx)
+	return nil
+}
+
+// make coinbase Tx and Confirm transaction standby in mempool
+func (m *mempool) Confirm() []*Tx {
+	coinbase := makeCoinbaseTx("yoonbaek")
+	txs := m.Txs
+	txs = append(txs, coinbase)
+	m.Txs = nil
+	return txs
+}
+
 func makeCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
 		{"", -1, "COINBASE"},
@@ -77,9 +95,9 @@ func makeCoinbaseTx(address string) *Tx {
 // So this block can check used TxOut without a leak.
 // If this function finds ID of TxIn, then it doesn't count
 // TxOuts which have same ID.
-func (b *blockchain) UtxOutsByAddr(addr string) (UtxOuts []*UTxOut) {
+func UtxOutsByAddr(addr string, b *blockchain) (UtxOuts []*UTxOut) {
 	spentCheck := map[string]bool{}
-	for _, block := range b.Blocks() {
+	for _, block := range Blocks(b) {
 		for _, tx := range block.TransActions {
 			for _, txIn := range tx.TxIns {
 				if txIn.Owner == addr {
@@ -108,8 +126,8 @@ func (b *blockchain) UtxOutsByAddr(addr string) (UtxOuts []*UTxOut) {
 }
 
 // 남은 잔고의 총액을 반환
-func (b *blockchain) BalanceByAddr(addr string) (total int) {
-	txOuts := b.UtxOutsByAddr(addr)
+func BalanceByAddr(addr string, b *blockchain) (total int) {
+	txOuts := UtxOutsByAddr(addr, b)
 
 	for _, txOut := range txOuts {
 		total += txOut.Amount
@@ -119,14 +137,14 @@ func (b *blockchain) BalanceByAddr(addr string) (total int) {
 
 // This function returns pointer of calculated Tx
 func makeTx(from, to string, amount int) (*Tx, error) {
-	if BlockChain().BalanceByAddr(from) < amount {
+	if BalanceByAddr(from, BlockChain()) < amount {
 		return nil, errors.New("not enough money")
 	}
 	var txOuts []*TxOut
 	var txIns []*TxIn
 
 	total := 0
-	for _, utxOut := range BlockChain().UtxOutsByAddr(from) {
+	for _, utxOut := range UtxOutsByAddr(from, BlockChain()) {
 		if total >= amount {
 			break
 		}
@@ -161,22 +179,4 @@ Outer:
 		}
 	}
 	return
-}
-
-func (m *mempool) AddTx(to string, amount int) error {
-	tx, err := makeTx("yoonbaek", to, amount)
-	if err != nil {
-		return err
-	}
-	m.Txs = append(m.Txs, tx)
-	return nil
-}
-
-// make coinbase Tx and Confirm transaction standby in mempool
-func (m *mempool) Confirm() []*Tx {
-	coinbase := makeCoinbaseTx("yoonbaek")
-	txs := m.Txs
-	txs = append(txs, coinbase)
-	m.Txs = nil
-	return txs
 }

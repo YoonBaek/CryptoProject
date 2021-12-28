@@ -29,12 +29,20 @@ func (b *blockchain) restore(data []byte) {
 	utils.FromBytes(b, data)
 }
 
-func (b *blockchain) persist() {
+func (b *blockchain) AddBlock() {
+	block := createBlock(b.LatestHash, b.Height+1)
+	b.LatestHash = block.Hash
+	b.Height = block.Height
+	b.CurrentDifficulty = block.Difficulty
+	persist(b)
+}
+
+func persist(b *blockchain) {
 	db.SaveCheckpoint(utils.ToBytes(b))
 }
 
-func (b *blockchain) recalculateDifficulty() int {
-	allBlocks := b.Blocks()
+func recalculateDifficulty(b *blockchain) int {
+	allBlocks := Blocks(b)
 	newestBlock := allBlocks[0]
 	lastRecalculatedBlock := allBlocks[difficultyInterval-1]
 	actualTime := (newestBlock.Timestamp - lastRecalculatedBlock.Timestamp) / 60
@@ -48,22 +56,14 @@ func (b *blockchain) recalculateDifficulty() int {
 	return b.CurrentDifficulty
 }
 
-func (b *blockchain) difficulty() int {
+func difficulty(b *blockchain) int {
 	if b.Height == 0 {
 		return defaultDifficulty
 	}
 	if b.Height%difficultyInterval == 0 {
-		return b.recalculateDifficulty()
+		return recalculateDifficulty(b)
 	}
 	return b.CurrentDifficulty
-}
-
-func (b *blockchain) AddBlock() {
-	block := createBlock(b.LatestHash, b.Height+1)
-	b.LatestHash = block.Hash
-	b.Height = block.Height
-	b.CurrentDifficulty = block.Difficulty
-	b.persist()
 }
 
 func BlockChain() *blockchain {
@@ -89,7 +89,10 @@ func BlockChain() *blockchain {
 
 // 쭉 prevHash를 타고 가면서 이전 블록을 불러와 slice에 담고,
 // 해당 슬라이스를 반환하기
-func (b *blockchain) Blocks() (blocks []*Block) {
+// This function doesn't mutate blockchain itself,
+// just reads blockchain. so It is better to be a func,
+// not method. (receiver function)
+func Blocks(b *blockchain) (blocks []*Block) {
 	hashMarker := b.LatestHash
 	for {
 		if hashMarker == "" {

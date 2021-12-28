@@ -71,7 +71,7 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 func blocks(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		json.NewEncoder(rw).Encode(blockchain.BlockChain().Blocks())
+		json.NewEncoder(rw).Encode(blockchain.Blocks(blockchain.BlockChain()))
 	case "POST":
 		blockchain.BlockChain().AddBlock()
 		rw.WriteHeader(http.StatusCreated)
@@ -110,11 +110,11 @@ func balance(rw http.ResponseWriter, r *http.Request) {
 	reqTotal := r.URL.Query().Get("total")
 	encoder := json.NewEncoder(rw)
 	if reqTotal == "true" {
-		total := blockchain.BlockChain().BalanceByAddr(address)
+		total := blockchain.BalanceByAddr(address, blockchain.BlockChain())
 		utils.HandleErr(encoder.Encode(balanceMessage{address, total}))
 		return
 	}
-	utils.HandleErr(encoder.Encode(blockchain.BlockChain().UtxOutsByAddr(address)))
+	utils.HandleErr(encoder.Encode(blockchain.UtxOutsByAddr(address, blockchain.BlockChain())))
 }
 
 func mempool(rw http.ResponseWriter, r *http.Request) {
