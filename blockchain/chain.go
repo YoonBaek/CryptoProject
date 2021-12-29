@@ -30,7 +30,7 @@ func (b *blockchain) restore(data []byte) {
 }
 
 func (b *blockchain) AddBlock() {
-	block := createBlock(b.LatestHash, b.Height+1)
+	block := createBlock(b.LatestHash, b.Height+1, getDifficulty(b))
 	b.LatestHash = block.Hash
 	b.Height = block.Height
 	b.CurrentDifficulty = block.Difficulty
@@ -56,7 +56,7 @@ func recalculateDifficulty(b *blockchain) int {
 	return b.CurrentDifficulty
 }
 
-func difficulty(b *blockchain) int {
+func getDifficulty(b *blockchain) int {
 	if b.Height == 0 {
 		return defaultDifficulty
 	}
@@ -67,23 +67,21 @@ func difficulty(b *blockchain) int {
 }
 
 func BlockChain() *blockchain {
-	if b == nil {
-		// GetBlockChain을 통해 b 인스턴스가 실행되는 상황을 가정해보자.
-		// 그리고 수 많은 go routine 들이 GetBlockChain을 호출한다고 할 때,
-		// b 인스턴스는 한 번만 제대로 초기화 되면 된다.
-		// 그럴 때 동기 처리를 도와주는 sync 패키지를 활용한다.
-		// once.Do()는 메서드 인자에 들어온 함수를 딱 한 번만 실행하는 기능이다.e.Do()는 메서드 인자에 들어온 함수를 딱 한 번만 실행하는 기능이다.
-		once.Do(func() {
-			b = &blockchain{Height: 0}
-			checkpoint := db.LoadCheckpoint()
-			if checkpoint == nil {
-				b.AddBlock()
-				return
-			}
-			// restore b from bytes
-			b.restore(checkpoint)
-		})
-	}
+	// GetBlockChain을 통해 b 인스턴스가 실행되는 상황을 가정해보자.
+	// 그리고 수 많은 go routine 들이 GetBlockChain을 호출한다고 할 때,
+	// b 인스턴스는 한 번만 제대로 초기화 되면 된다.
+	// 그럴 때 동기 처리를 도와주는 sync 패키지를 활용한다.
+	// once.Do()는 메서드 인자에 들어온 함수를 딱 한 번만 실행하는 기능이다.e.Do()는 메서드 인자에 들어온 함수를 딱 한 번만 실행하는 기능이다.
+	once.Do(func() {
+		b = &blockchain{Height: 0}
+		checkpoint := db.LoadCheckpoint()
+		if checkpoint == nil {
+			b.AddBlock()
+			return
+		}
+		// restore b from bytes
+		b.restore(checkpoint)
+	})
 	return b
 }
 
