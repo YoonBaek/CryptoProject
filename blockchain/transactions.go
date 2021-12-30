@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/YoonBaek/CryptoProject/utils"
+	"github.com/YoonBaek/CryptoProject/wallet"
 )
 
 const minerReward int = 10
@@ -54,7 +55,7 @@ type UTxOut struct {
 }
 
 func (m *mempool) AddTx(to string, amount int) error {
-	tx, err := makeTx("yoonbaek", to, amount)
+	tx, err := makeTx(wallet.Wallet().Address, to, amount)
 	if err != nil {
 		return err
 	}
@@ -64,7 +65,7 @@ func (m *mempool) AddTx(to string, amount int) error {
 
 // make coinbase Tx and Confirm transaction standby in mempool
 func (m *mempool) Confirm() []*Tx {
-	coinbase := makeCoinbaseTx("yoonbaek")
+	coinbase := makeCoinbaseTx(wallet.Wallet().Address)
 	txs := m.Txs
 	txs = append(txs, coinbase)
 	m.Txs = nil
