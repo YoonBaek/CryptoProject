@@ -5,7 +5,9 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/hex"
 	"fmt"
+	"math/big"
 	"os"
 
 	"github.com/YoonBaek/CryptoProject/utils"
@@ -69,4 +71,37 @@ func persistKey(key *ecdsa.PrivateKey) {
 	utils.HandleErr(err)
 	err = os.WriteFile(fileName, bytes, 0644)
 	utils.HandleErr(err)
+}
+
+func Sign(payload string) string {
+	payload = fmt.Sprintf("%x", payload)
+	payloadBytes, err := hex.DecodeString(payload)
+	utils.HandleErr(err)
+	r, s, err := ecdsa.Sign(rand.Reader, w.privateKey, payloadBytes)
+	utils.HandleErr(err)
+	bytes := append(r.Bytes(), s.Bytes()...)
+	signature := fmt.Sprintf("%x", bytes)
+	return signature
+}
+
+func verify(payload, signature, address string) bool {
+	payloadAsBytes, err := hex.DecodeString(payload)
+	utils.HandleErr(err)
+	r, s, err := restoreBigInts(signature)
+	utils.HandleErr(err)
+	x, y, err := restoreBigInts(address)
+	utils.HandleErr(err)
+	pubKey := ecdsa.PublicKey{elliptic.P256(), x, y}
+
+	return ecdsa.Verify(&pubKey, payloadAsBytes, r, s)
+}
+
+func restoreBigInts(signature string) (l, r *big.Int, err error) {
+	signAsBytes, err := hex.DecodeString(signature)
+	mid := len(signAsBytes) / 2
+	lBytes := signAsBytes[:mid]
+	rBytes := signAsBytes[mid:]
+	l.SetBytes(lBytes)
+	r.SetBytes(rBytes)
+	return
 }
