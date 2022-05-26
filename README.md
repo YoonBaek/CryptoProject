@@ -1,6 +1,6 @@
 ## Goal ⚽
 
-Golang으로 아무 쓸모 없는 블록체인을 한땀 한땀 만들어보면서 BTC나 ETH에 적용된 블록체인 기법 이해해보기! Special Thanks to Nico!
+Golang으로 아무 쓸모 없는 블록체인을 한땀 한땀 만들어보면서 BTC나 ETH에 적용된 블록체인 기법 이해해보기!
 
 ## Current...
 
